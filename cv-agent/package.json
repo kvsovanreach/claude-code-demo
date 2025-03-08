@@ -1,0 +1,26 @@
+{
+  "name": "ai-agent-dashboard",
+  "version": "1.0.0",
+  "description": "A responsive dashboard for an AI-powered Agentic Tool",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js"
+  },
+  "keywords": [
+    "dashboard",
+    "AI",
+    "agent",
+    "real-time",
+    "computer-vision"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

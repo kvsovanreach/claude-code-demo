@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent Dashboard</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+</head>
+<body class="dashboard-page">
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-robot"></i>
+            <span>AI Agent Dashboard</span>
+        </div>
+        <div class="nav-links">
+            <a href="#overview" class="nav-link active" data-section="overview"><i class="fas fa-home"></i> Overview</a>
+            <a href="#inference" class="nav-link" data-section="inference"><i class="fas fa-camera"></i> Live Inference</a>
+            <a href="#performance" class="nav-link" data-section="performance"><i class="fas fa-chart-line"></i> Performance</a>
+            <a href="#settings" class="nav-link" data-section="settings"><i class="fas fa-cog"></i> Settings</a>
+            <a href="#feedback" class="nav-link" data-section="feedback"><i class="fas fa-comment"></i> Feedback</a>
+        </div>
+        <div class="nav-user">
+            <span id="user-name">User</span>
+            <button id="logout-btn" class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <!-- Overview Section -->
+        <section id="overview" class="dashboard-section active">
+            <h2 class="section-title">System Overview</h2>
+            
+            <div class="status-cards">
+                <div class="status-card">
+                    <div class="status-icon">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <div class="status-info">
+                        <h3>Model Status</h3>
+                        <div class="status-indicator">
+                            <span class="status-dot active"></span>
+                            <span id="model-status">Active</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="status-card">
+                    <div class="status-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <div class="status-info">
+                        <h3>Current FPS</h3>
+                        <div class="metric-value" id="current-fps">24.5</div>
+                    </div>
+                </div>
+                
+                <div class="status-card">
+                    <div class="status-icon">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <div class="status-info">
+                        <h3>Accuracy</h3>
+                        <div class="metric-value" id="current-accuracy">92.7%</div>
+                    </div>
+                </div>
+                
+                <div class="status-card">
+                    <div class="status-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="status-info">
+                        <h3>Avg. Latency</h3>
+                        <div class="metric-value" id="current-latency">42ms</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-2-3">
+                    <div class="card">
+                        <h3 class="card-title">Real-time Performance</h3>
+                        <div class="chart-container">
+                            <canvas id="overview-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-1-3">
+                    <div class="card">
+                        <h3 class="card-title">System Alerts</h3>
+                        <div class="alerts-container" id="alerts-container">
+                            <!-- Alerts will be dynamically added here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-full">
+                    <div class="card">
+                        <h3 class="card-title">Model Health Status</h3>
+                        <div class="health-metrics">
+                            <div class="health-metric">
+                                <h4>Memory Usage</h4>
+                                <div class="progress-bar">
+                                    <div class="progress" id="memory-usage" style="width: 65%;"></div>
+                                </div>
+                                <span class="progress-text">65%</span>
+                            </div>
+                            
+                            <div class="health-metric">
+                                <h4>CPU Load</h4>
+                                <div class="progress-bar">
+                                    <div class="progress" id="cpu-load" style="width: 42%;"></div>
+                                </div>
+                                <span class="progress-text">42%</span>
+                            </div>
+                            
+                            <div class="health-metric">
+                                <h4>Drift Score</h4>
+                                <div class="progress-bar">
+                                    <div class="progress" id="drift-score" style="width: 12%;"></div>
+                                </div>
+                                <span class="progress-text">12%</span>
+                            </div>
+                            
+                            <div class="health-metric">
+                                <h4>GPU Utilization</h4>
+                                <div class="progress-bar">
+                                    <div class="progress" id="gpu-util" style="width: 78%;"></div>
+                                </div>
+                                <span class="progress-text">78%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Inference Section -->
+        <section id="inference" class="dashboard-section">
+            <h2 class="section-title">Live Inference</h2>
+            
+            <div class="row">
+                <div class="col-2-3">
+                    <div class="card">
+                        <div class="video-container">
+                            <div class="video-controls">
+                                <button id="play-btn" class="video-control-btn"><i class="fas fa-play"></i></button>
+                                <button id="pause-btn" class="video-control-btn"><i class="fas fa-pause"></i></button>
+                                <button id="fullscreen-btn" class="video-control-btn"><i class="fas fa-expand"></i></button>
+                                <select id="zoom-level" class="video-control-select">
+                                    <option value="1">1x</option>
+                                    <option value="1.5">1.5x</option>
+                                    <option value="2">2x</option>
+                                </select>
+                            </div>
+                            <div id="video-feed" class="video-feed">
+                                <!-- Video will be displayed here -->
+                                <img id="inference-placeholder" src="assets/images/inference-placeholder.jpg" alt="Video Feed">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-1-3">
+                    <div class="card">
+                        <h3 class="card-title">Recent Detections</h3>
+                        <div class="detections-list" id="recent-detections">
+                            <!-- Recent detections will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-full">
+                    <div class="card">
+                        <h3 class="card-title">Detection Details</h3>
+                        <div class="detection-details" id="detection-details">
+                            <p class="empty-state">Click on any detection in the video feed to see details</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Performance Section -->
+        <section id="performance" class="dashboard-section">
+            <h2 class="section-title">Performance Metrics</h2>
+            
+            <div class="row">
+                <div class="col-1-3">
+                    <div class="card">
+                        <h3 class="card-title">Accuracy Over Time</h3>
+                        <div class="chart-container">
+                            <canvas id="accuracy-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-1-3">
+                    <div class="card">
+                        <h3 class="card-title">FPS Over Time</h3>
+                        <div class="chart-container">
+                            <canvas id="fps-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-1-3">
+                    <div class="card">
+                        <h3 class="card-title">Latency Over Time</h3>
+                        <div class="chart-container">
+                            <canvas id="latency-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-full">
+                    <div class="card">
+                        <h3 class="card-title">Recent Predictions</h3>
+                        <div class="table-container">
+                            <table class="data-table" id="predictions-table">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Object</th>
+                                        <th>Confidence</th>
+                                        <th>Processing Time</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Table data will be dynamically added here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settings" class="dashboard-section">
+            <h2 class="section-title">System Settings</h2>
+            
+            <div class="row">
+                <div class="col-full">
+                    <div class="card">
+                        <h3 class="card-title">Model Configuration</h3>
+                        <form id="model-settings-form">
+                            <div class="settings-group">
+                                <div class="settings-item">
+                                    <label for="confidence-threshold">Confidence Threshold</label>
+                                    <div class="slider-container">
+                                        <input type="range" id="confidence-threshold" min="0" max="100" value="70" class="slider">
+                                        <span class="slider-value" id="confidence-value">70%</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="settings-item">
+                                    <label for="fps-limit">FPS Limit</label>
+                                    <div class="slider-container">
+                                        <input type="range" id="fps-limit" min="1" max="60" value="30" class="slider">
+                                        <span class="slider-value" id="fps-value">30 FPS</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="settings-group">
+                                <div class="settings-item">
+                                    <label for="retrain-interval">Model Retraining Interval</label>
+                                    <select id="retrain-interval" class="settings-select">
+                                        <option value="7">Every 7 Days</option>
+                                        <option value="14">Every 14 Days</option>
+                                        <option value="30" selected>Every 30 Days</option>
+                                        <option value="90">Every 90 Days</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="settings-item">
+                                    <label for="alert-threshold">Alert Threshold</label>
+                                    <div class="slider-container">
+                                        <input type="range" id="alert-threshold" min="0" max="100" value="80" class="slider">
+                                        <span class="slider-value" id="alert-value">80%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h4 class="settings-subtitle">Post-Processing Settings</h4>
+                            
+                            <div class="settings-group">
+                                <div class="settings-item">
+                                    <label>
+                                        <input type="checkbox" id="nms-enabled" checked>
+                                        Enable Non-Maximum Suppression
+                                    </label>
+                                </div>
+                                
+                                <div class="settings-item">
+                                    <label>
+                                        <input type="checkbox" id="tracking-enabled" checked>
+                                        Enable Object Tracking
+                                    </label>
+                                </div>
+                                
+                                <div class="settings-item">
+                                    <label>
+                                        <input type="checkbox" id="smoothing-enabled">
+                                        Enable Frame-to-Frame Smoothing
+                                    </label>
+                                </div>
+                                
+                                <div class="settings-item">
+                                    <label>
+                                        <input type="checkbox" id="alerts-enabled" checked>
+                                        Enable Automatic Alerts
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary" id="save-settings">Save Settings</button>
+                                <button type="button" class="btn-secondary" id="reset-settings">Reset to Defaults</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Feedback Section -->
+        <section id="feedback" class="dashboard-section">
+            <h2 class="section-title">Provide Feedback</h2>
+            
+            <div class="row">
+                <div class="col-2-3">
+                    <div class="card">
+                        <h3 class="card-title">Submit Feedback</h3>
+                        <form id="feedback-form">
+                            <div class="form-group">
+                                <label for="feedback-type">Feedback Type</label>
+                                <select id="feedback-type" required>
+                                    <option value="" disabled selected>Select a feedback type</option>
+                                    <option value="incorrect_detection">Incorrect Detection</option>
+                                    <option value="missed_detection">Missed Detection</option>
+                                    <option value="false_positive">False Positive</option>
+                                    <option value="performance_issue">Performance Issue</option>
+                                    <option value="feature_request">Feature Request</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="feedback-description">Description</label>
+                                <textarea id="feedback-description" rows="4" placeholder="Please describe your feedback in detail..." required></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="feedback-image">Upload Image (Optional)</label>
+                                <input type="file" id="feedback-image" accept="image/*">
+                                <div id="image-preview" class="image-preview"></div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">Submit Feedback</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="col-1-3">
+                    <div class="card">
+                        <h3 class="card-title">Recent Feedback</h3>
+                        <div class="feedback-history" id="feedback-history">
+                            <!-- Recent feedback will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="toast-container" id="toast-container">
+        <!-- Toast notifications will be added here dynamically -->
+    </div>
+
+    <script src="assets/js/dashboard.js"></script>
+</body>
+</html>
